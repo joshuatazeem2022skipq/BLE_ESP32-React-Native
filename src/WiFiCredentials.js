@@ -14,7 +14,7 @@ import { BleContext } from "./ContextApi/BleContext";
 import BleManager from "react-native-ble-manager";
 import { Buffer } from "buffer";
 
-const CHARACTERISTIC_UUID_wifiLogin = "ca0279ab-3c2c-4efa-88ae-2863353339c9";
+const CHARACTERISTIC_UUID_wifiLogin = "a5cd5a47-22eb-406f-8aa5-bf6a2cea1a8a";
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const CHUNK_SIZE = 20;
 
@@ -45,6 +45,10 @@ const WiFiCredentials = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (selectedDevice && isConnected) {
+      if (password.length < 8) {
+        Alert.alert("Error", "Password must be at least 8 characters long.");
+        return;
+      }
       try {
         // Convert username and password to JSON string
         const credentials = JSON.stringify({ ssid, password });
@@ -97,6 +101,7 @@ const WiFiCredentials = ({ navigation }) => {
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                maxLength={32} // Maximum password length can be set here if needed
               />
               <TouchableOpacity
                 onPress={togglePasswordVisibility}
@@ -143,7 +148,6 @@ const styles = StyleSheet.create({
   },
   heading: {
     flex: 1,
-
     justifyContent: "center",
     alignItems: "center",
     fontSize: 24,

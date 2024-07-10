@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -18,20 +18,55 @@ import Logo from "./assets/1.png";
 import BT from "./assets/blues.png";
 import { useNavigation } from "@react-navigation/native";
 import { BleContext } from "./ContextApi/BleContext";
+import { debounce } from "lodash";
 
 const { width, height } = Dimensions.get("window");
+
+const formatWeight = (weight) => {
+  if (typeof weight === "number" && !isNaN(weight)) {
+    return weight.toFixed(1);
+  } else {
+    return "0.0";
+  }
+};
+
+const formatPercentage = (percentage) => {
+  if (typeof percentage === "number" && !isNaN(percentage)) {
+    return `${percentage.toFixed(1)}%`;
+  } else {
+    return "0.0%";
+  }
+};
 
 const Dashboard = () => {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const navigation = useNavigation();
   const {
-    bleData,
+    bleData = {},
     handleChangeUnit,
     unit,
     handleZeroClick,
     selectedDevice,
     isConnected,
-  } = useContext(BleContext);
+  } = useContext(BleContext) || {};
+
+  const formattedData = useMemo(() => {
+    return {
+      frontWeight: formatWeight(bleData.frontWeight),
+      crossWeight: formatWeight(bleData.crossWeight),
+      rearWeight: formatWeight(bleData.rearWeight),
+      totalWeight: formatWeight(bleData.totalWeight),
+      lfWeight: formatWeight(bleData.lfWeight),
+      rfWeight: formatWeight(bleData.rfWeight),
+      lrWeight: formatWeight(bleData.lrWeight),
+      rrWeight: formatWeight(bleData.rrWeight),
+    };
+  }, [bleData, unit]);
+
+  const debouncedHandleZeroClick = useMemo(
+    () => debounce(handleZeroClick, 300),
+    [handleZeroClick]
+  );
 
   const handleLogin = () => {
     setShowLoginPopup(true);
@@ -40,10 +75,6 @@ const Dashboard = () => {
 
   const handleBluetooth = () => {
     navigation.navigate("BluetoothScreen");
-  };
-
-  const formatWeight = (weight) => {
-    return weight ? weight.toFixed(1) : "N/A";
   };
 
   const getBlockColor = (status) => {
@@ -70,7 +101,7 @@ const Dashboard = () => {
               <Text style={styles.cardTitle}>Front Weight</Text>
               <View style={styles.card}>
                 <Text style={styles.cardValue}>
-                  {formatWeight(bleData.frontWeight)}
+                  {formattedData.frontWeight}
                 </Text>
               </View>
             </View>
@@ -85,27 +116,27 @@ const Dashboard = () => {
                   style={[styles.smallCard, getBlockColor(bleData.lfColor)]}
                 >
                   <Text style={styles.columnValue}>
-                    {formatWeight(bleData.lfWeight)}
+                    {formattedData.lfWeight}
                   </Text>
                   <Text style={styles.columnPercentage}>
-                    {bleData.lfWeightP ?? "N/A"}%
+                    {formatPercentage(bleData.lfWeightP)}
                   </Text>
                 </View>
               </View>
               <View style={styles.column}>
                 <BatteryIcon
                   size={30}
-                  batteryPercentage={bleData.rfBattery ?? "N/A"}
+                  batteryPercentage={bleData.rfBattery ?? "0"}
                 />
                 <Text style={styles.columnTitle}>RF</Text>
                 <View
                   style={[styles.smallCard, getBlockColor(bleData.rfColor)]}
                 >
                   <Text style={styles.columnValue}>
-                    {formatWeight(bleData.rfWeight)}
+                    {formattedData.rfWeight}
                   </Text>
                   <Text style={styles.columnPercentage}>
-                    {bleData.rfWeightP ?? "N/A"}%
+                    {formatPercentage(bleData.rfWeightP)}
                   </Text>
                 </View>
               </View>
@@ -114,7 +145,7 @@ const Dashboard = () => {
               <Text style={styles.cardTitle}>Cross Weight</Text>
               <View style={styles.card}>
                 <Text style={styles.cardValue}>
-                  {formatWeight(bleData.crossWeight)}
+                  {formattedData.crossWeight}
                 </Text>
               </View>
             </View>
@@ -122,34 +153,34 @@ const Dashboard = () => {
               <View style={styles.column}>
                 <BatteryIcon
                   size={30}
-                  batteryPercentage={bleData.lrBattery ?? "N/A"}
+                  batteryPercentage={bleData.lrBattery ?? "0"}
                 />
                 <Text style={styles.columnTitle}>LR</Text>
                 <View
                   style={[styles.smallCard, getBlockColor(bleData.lrColor)]}
                 >
                   <Text style={styles.columnValue}>
-                    {formatWeight(bleData.lrWeight)}
+                    {formattedData.lrWeight}
                   </Text>
                   <Text style={styles.columnPercentage}>
-                    {bleData.lrWeightP ?? "N/A"}%
+                    {formatPercentage(bleData.lrWeightP)}
                   </Text>
                 </View>
               </View>
               <View style={styles.column}>
                 <BatteryIcon
                   size={30}
-                  batteryPercentage={bleData.rrBattery ?? "N/A"}
+                  batteryPercentage={bleData.rrBattery ?? "0"}
                 />
                 <Text style={styles.columnTitle}>RR</Text>
                 <View
                   style={[styles.smallCard, getBlockColor(bleData.rrColor)]}
                 >
                   <Text style={styles.columnValue}>
-                    {formatWeight(bleData.rrWeight)}
+                    {formattedData.rrWeight}
                   </Text>
                   <Text style={styles.columnPercentage}>
-                    {bleData.rrWeightP ?? "N/A"}%
+                    {formatPercentage(bleData.rrWeightP)}
                   </Text>
                 </View>
               </View>
@@ -157,9 +188,7 @@ const Dashboard = () => {
             <View style={[styles.centerCard, { marginTop: 20 }]}>
               <Text style={styles.cardTitle}>Rear Weight</Text>
               <View style={styles.card}>
-                <Text style={styles.cardValue}>
-                  {formatWeight(bleData.rearWeight)}
-                </Text>
+                <Text style={styles.cardValue}>{formattedData.rearWeight}</Text>
               </View>
             </View>
             <View style={styles.totalWeightContainer}>
@@ -167,7 +196,7 @@ const Dashboard = () => {
                 <Text style={styles.cardTitle}>Total Weight</Text>
                 <View style={styles.card}>
                   <Text style={styles.cardValue}>
-                    {formatWeight(bleData.totalWeight)}
+                    {formattedData.totalWeight}
                   </Text>
                 </View>
               </View>
@@ -195,7 +224,10 @@ const Dashboard = () => {
                 </RadioButton.Group>
               </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleZeroClick}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={debouncedHandleZeroClick}
+            >
               <View style={styles.centerCard}>
                 <View style={styles.card1}>
                   <Text style={styles.cardValue1}>Zero</Text>
@@ -218,9 +250,7 @@ const Dashboard = () => {
                   {selectedDevice ? selectedDevice.name : "-"}
                 </Text>
                 <Text
-                  style={
-                    selectedDevice ? styles.connected : styles.disconnected
-                  }
+                  style={isConnected ? styles.connected : styles.disconnected}
                 >
                   {isConnected ? "Connected" : "Disconnected"}
                 </Text>
@@ -261,7 +291,6 @@ const styles = StyleSheet.create({
     aspectRatio: 3,
     resizeMode: "contain",
   },
-
   content: {
     flex: 1,
     alignItems: "center",
@@ -282,7 +311,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     alignItems: "center",
-    width: width * 0.3,
+    width: width * 0.3 || 100,
     justifyContent: "center",
   },
   card1: {
@@ -290,7 +319,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     alignItems: "center",
-    width: width * 0.3,
+    width: width * 0.3 || 100,
     justifyContent: "center",
   },
   cardValue: {
@@ -321,9 +350,8 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 10,
     alignItems: "center",
-    width: width * 0.32,
-    height: height * 0.07,
-
+    width: width * 0.32 || 120,
+    height: height * 0.07 || 50,
     justifyContent: "center",
   },
   greenBlock: {
@@ -340,26 +368,6 @@ const styles = StyleSheet.create({
   columnPercentage: {
     fontSize: width * 0.04,
     color: "#000",
-  },
-  centerCard1: {
-    alignItems: "center",
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  centerCard3: {
-    alignItems: "center",
-    marginBottom: 20,
-    marginTop: 1,
-    marginLeft: width * 0.23,
-  },
-  card5: {
-    backgroundColor: "#aaff00",
-    padding: 10,
-    borderRadius: 20,
-    alignItems: "center",
-    width: width * 0.3,
-    height: height * 0.05,
-    justifyContent: "center",
   },
   totalWeightContainer: {
     flexDirection: "row",
@@ -378,36 +386,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 40,
   },
-  radioOption1: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 40,
-  },
   radioText: {
     fontSize: 16,
     color: "#fff",
     marginRight: 2,
-  },
-  radioButtonWrapper: {
-    marginLeft: 0,
-  },
-  centerCard4: {
-    alignItems: "center",
-    marginBottom: 1,
-    marginTop: 2,
-  },
-  card1: {
-    backgroundColor: "red",
-    padding: 3,
-    borderRadius: 8,
-    width: width * 0.3,
-    alignItems: "center",
-    height: height * 0.05,
-  },
-  cardValue1: {
-    fontSize: width * 0.06,
-    color: "#000",
-    textAlign: "center",
   },
   button: {
     alignItems: "center",
@@ -449,4 +431,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
 export default Dashboard;

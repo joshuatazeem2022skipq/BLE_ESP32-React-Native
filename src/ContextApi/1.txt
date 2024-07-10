@@ -7,18 +7,9 @@ import React, {
 } from "react";
 import { Buffer } from "buffer";
 import BleManager from "react-native-ble-manager";
-import {
-  DeviceEventEmitter,
-  NativeEventEmitter,
-  NativeModules,
-} from "react-native";
-
-const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const Zero = "9bad813d-370a-45e5-ac4d-bb4c2b65379f";
-const characteristicUuid = "a5cd5a47-22eb-406f-8aa5-bf6a2cea1a8a"; // Replace with your actual characteristic UUID
 const CHUNK_SIZE = 20;
 
 export const BleContext = createContext();
@@ -62,8 +53,12 @@ export const BleProvider = ({ children }) => {
     }
   };
 
+  // useEffect(() => {
+  //   const interval = setInterval(checkConnectionStatus, 2000); // Check every 5 seconds
+  //   return () => clearInterval(interval);
+  // }, [selectedDevice]);
   useEffect(() => {
-    checkConnectionStatus();
+    checkConnectionStatus(); // Check connection status once when selectedDevice changes
   }, [selectedDevice]);
 
   const sendChunkedData = async (data) => {
@@ -93,13 +88,51 @@ export const BleProvider = ({ children }) => {
       await sendChunkedData(response);
       console.log(`${value} response from Device: `, response);
 
-      if (value.toUpperCase() === "LOGIN") {
-        setIsLoginMode(false);
-      }
+      // setTimeout(async () => {
+      //   try {
+      //     const falseResponse = JSON.stringify({
+      //       [value.toUpperCase()]: false,
+      //     });
+      //     console.log(`Sending false ${value} response: `, falseResponse);
+      //     await sendChunkedData(falseResponse);
+      //     console.log(`False ${value} response sent: `, falseResponse);
+      //   } catch (error) {
+      //     console.error(`Error sending false ${value} response: `, error);
+      //   }
+      // }, 200);
     } catch (error) {
       console.error(`Error sending ${value} response: `, error);
     }
   };
+  // const sendResponse = async (value) => {
+  //   if (!selectedDevice || !isConnected) {
+  //     console.error("No device selected or device not connected");
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = JSON.stringify({ [value.toUpperCase()]: true });
+  //     console.log(`Sending ${value} response: `, response);
+  //     await sendChunkedData(response);
+  //     console.log(`${value} response sent: `, response);
+
+  //     // Remove this setTimeout if not required
+  //     // setTimeout(async () => {
+  //     //   try {
+  //     //     const falseResponse = JSON.stringify({
+  //     //       [value.toUpperCase()]: false,
+  //     //     });
+  //     //     console.log(`Sending false ${value} response: `, falseResponse);
+  //     //     await sendChunkedData(falseResponse);
+  //     //     console.log(`False ${value} response sent: `, falseResponse);
+  //     //   } catch (error) {
+  //     //     console.error(`Error sending false ${value} response: `, error);
+  //     //   }
+  //     // }, 200);
+  //   } catch (error) {
+  //     console.error(`Error sending ${value} response: `, error);
+  //   }
+  // };
 
   const sendWiFiSwitchResponse = async (value) => {
     if (!selectedDevice || !isConnected) {
@@ -113,6 +146,7 @@ export const BleProvider = ({ children }) => {
       await sendChunkedData(response);
       console.log("WiFiSwitch response sent: ", response);
 
+      // If WiFiSwitch is enabled, send false response after 3 seconds
       if (value) {
         setTimeout(async () => {
           try {
@@ -152,71 +186,6 @@ export const BleProvider = ({ children }) => {
       return hasChanged ? { ...prevData, ...updatedData } : prevData;
     });
   }, []);
-
-  const handleUpdateValueForCharacteristic = ({
-    value,
-    characteristic,
-    peripheral,
-  }) => {
-    if (isLoginMode) return; // Skip processing updates during login mode
-
-    const data = Buffer.from(value).toString("utf-8");
-    const jsonData = JSON.parse(data);
-
-    if (characteristic === characteristicUuid) {
-      setBleData(jsonData);
-    }
-  };
-
-  const handleDisconnectedPeripheral = (data) => {
-    if (data.peripheral === selectedDevice?.id) {
-      setIsConnected(false);
-      setSelectedDevice(null);
-      setBleData({
-        frontWeight: "",
-        lfWeight: "",
-        rfWeight: "",
-        rfWeightP: "",
-        rfBattery: "",
-        lfWeightP: "",
-        lfBattery: "",
-        crossWeight: "",
-        lrWeight: "",
-        lrWeightP: "",
-        lrBattery: "",
-        rrWeight: "",
-        rrWeightP: "",
-        rrBattery: "",
-        rearWeight: "",
-        totalWeight: "",
-        lfColor: "",
-        rfColor: "",
-        lrColor: "",
-        rrColor: "",
-      });
-    }
-  };
-
-  useEffect(() => {
-    BleManager.start({ showAlert: false }).then(() => {
-      console.log("BleManager initialized");
-    });
-
-    const updateListener = bleManagerEmitter.addListener(
-      "BleManagerDidUpdateValueForCharacteristic",
-      handleUpdateValueForCharacteristic
-    );
-
-    const disconnectListener = bleManagerEmitter.addListener(
-      "BleManagerDisconnectPeripheral",
-      handleDisconnectedPeripheral
-    );
-
-    return () => {
-      updateListener.remove();
-      disconnectListener.remove();
-    };
-  }, [isLoginMode]);
 
   const contextValue = useMemo(
     () => ({

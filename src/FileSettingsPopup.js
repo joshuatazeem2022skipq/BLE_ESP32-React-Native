@@ -12,7 +12,7 @@ import { BleContext } from "./ContextApi/BleContext";
 import BleManager from "react-native-ble-manager";
 import { Buffer } from "buffer";
 
-const CHARACTERISTIC_UUID_setupMode = "87651234-4321-4321-4321-876543210987";
+const CHARACTERISTIC_UUID_setupMode = "9bad813d-370a-45e5-ac4d-bb4c2b65379f";
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const CHUNK_SIZE = 20;
 
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 20,
     width: 250,
-    height: 50,
+    height: 70,
   },
   button: {
     backgroundColor: "red",

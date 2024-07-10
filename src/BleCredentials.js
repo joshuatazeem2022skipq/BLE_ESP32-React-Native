@@ -14,7 +14,7 @@ import { BleContext } from "./ContextApi/BleContext";
 import BleManager from "react-native-ble-manager";
 import { Buffer } from "buffer";
 
-const CHARACTERISTIC_UUID_wifiLogin = "ca0279ab-3c2c-4efa-88ae-2863353339c9";
+const CHARACTERISTIC_UUID_wifiLogin = "a5cd5a47-22eb-406f-8aa5-bf6a2cea1a8a";
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const CHUNK_SIZE = 20;
 

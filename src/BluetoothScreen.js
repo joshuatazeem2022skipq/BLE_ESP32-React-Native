@@ -20,6 +20,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const serviceid = "12345678-1234-1234-1234-123456789012";
 const node1 = "12348765-8765-4321-8765-123456789012";
+const node2 = "29d16b06-534f-41a1-85f7-260cf91a217f";
+const node3 = "d8c8b40b-a3b8-46d4-8bae-8b41e3bf81fc";
+const node4 = "87651234-4321-4321-4321-876543210987";
+const frontWeight = "ca0279ab-3c2c-4efa-88ae-2863353339c9";
 const setupModeUUID = "d8c8b40b-a3b8-46d4-8bae-8b41e3bf81fc";
 
 const BluetoothBLETerminal = () => {
@@ -157,76 +161,71 @@ const BluetoothBLETerminal = () => {
   };
 
   const readData = async () => {
-    while (true) {
-      if (selectedDevice) {
-        try {
-          const readDataNode1 = await BleManager.read(
-            selectedDevice.id,
-            serviceid,
-            node1
-          );
-          const readDataSetupMode = await BleManager.read(
-            selectedDevice.id,
-            serviceid,
-            setupModeUUID
-          );
+    if (selectedDevice) {
+      try {
+        const [
+          readDataNode1,
+          readDataNode2,
+          readDataNode3,
+          readDataNode4,
+          readfrontWeight,
+        ] = await Promise.all([
+          BleManager.read(selectedDevice.id, serviceid, node1),
+          BleManager.read(selectedDevice.id, serviceid, node2),
+          BleManager.read(selectedDevice.id, serviceid, node3),
+          BleManager.read(selectedDevice.id, serviceid, node4),
+          BleManager.read(selectedDevice.id, serviceid, frontWeight),
+          BleManager.read(selectedDevice.id, serviceid, setupModeUUID),
+        ]);
 
-          // console.log("Raw data received from node1:", readDataNode1);
-          // console.log("Raw data received from setupMode:", readDataSetupMode);
+        const messageNode1 = Buffer.from(readDataNode1).toString("utf-8");
+        const messageNode2 = Buffer.from(readDataNode2).toString("utf-8");
+        const messageNode3 = Buffer.from(readDataNode3).toString("utf-8");
+        const messageNode4 = Buffer.from(readDataNode4).toString("utf-8");
+        const messageFrontWeight =
+          Buffer.from(readfrontWeight).toString("utf-8");
 
-          // Convert ArrayBuffer to strings using Buffer
-          const messageNode1 = Buffer.from(readDataNode1).toString("utf-8");
-          const messageSetupMode =
-            Buffer.from(readDataSetupMode).toString("utf-8");
+        console.log("Read node1:", messageNode1);
+        console.log("Read node2:", messageNode2);
+        console.log("Read node3:", messageNode3);
+        console.log("Read node4:", messageNode4);
+        console.log("Read FrontWeight:", messageFrontWeight);
 
-          console.log("Read node1:", messageNode1);
-          console.log("Read setupMode:", messageSetupMode);
+        const parsedData = JSON.parse(messageNode1);
+        const parsedData1 = JSON.parse(messageNode2);
+        const parsedData2 = JSON.parse(messageNode3);
+        const parsedData3 = JSON.parse(messageNode4);
+        const parsedFrontWeight = JSON.parse(messageFrontWeight);
 
-          let parsedData;
-          let parsedSetupMode;
-          try {
-            parsedData = JSON.parse(messageNode1);
-            parsedSetupMode = JSON.parse(messageSetupMode);
-          } catch (parseError) {
-            console.error("Error parsing data:", parseError);
-            continue;
-          }
+        const data = {
+          frontWeight: parsedFrontWeight["front weight"],
+          crossWeight: parsedFrontWeight["cross weight"],
+          rearWeight: parsedFrontWeight["rear weight"],
+          totalWeight: parsedFrontWeight["total weight"],
+          lfWeight: parsedData["lfWeight"],
+          lfWeightP: parsedData["lfWeightP"],
+          lfBattery: parsedData["lfBattery"],
+          rfWeight: parsedData1["rfWeight"],
+          rfWeightP: parsedData1["rfWeightP"],
+          rfBattery: parsedData1["rfBattery"],
+          lrWeight: parsedData2["lrWeight"],
+          lrWeightP: parsedData2["lrWeightP"],
+          lrBattery: parsedData2["lrBattery"],
+          rrWeight: parsedData3["rrWeight"],
+          rrWeightP: parsedData3["rrWeightP"],
+          rrBattery: parsedData3["rrBattery"],
+          lfColor: parsedData["lfColor"],
+          rfColor: parsedData1["rfColor"],
+          lrColor: parsedData2["lrColor"],
+          rrColor: parsedData3["rrColor"],
+        };
 
-          const data = {
-            frontWeight: parsedData["front weight"],
-            crossWeight: parsedData["cross weight"],
-            rearWeight: parsedData["rear weight"],
-            totalWeight: parsedData["total weight"],
-            lfWeight: parsedData["lfWeight"],
-            lfWeightP: parsedData["lfWeightP"],
-            lfBattery: parsedData["lfBattery"],
-            rfWeight: parsedData["rfWeight"],
-            rfWeightP: parsedData["rfWeightP"],
-            rfBattery: parsedData["rfBattery"],
-            lrWeight: parsedData["lrWeight"],
-            lrWeightP: parsedData["lrWeightP"],
-            lrBattery: parsedData["lrBattery"],
-            rrWeight: parsedData["rrWeight"],
-            rrWeightP: parsedData["rrWeightP"],
-            rrBattery: parsedData["rrBattery"],
-            lfColor: parsedSetupMode["lfColor"],
-            rfColor: parsedSetupMode["rfColor"],
-            lrColor: parsedSetupMode["lrColor"],
-            rrColor: parsedSetupMode["rrColor"],
-          };
-
-          setBleData(data);
-        } catch (error) {
-          console.error("Error reading message:", error);
-          if (error.message.includes("Characteristic")) {
-            console.error("Characteristic not found:", error.message);
-          }
-        }
+        setBleData(data);
+      } catch (error) {
+        console.error("Error reading message:", error);
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   };
-
   useEffect(() => {
     readDataRef.current = _.debounce(readData, 200);
   }, [readData]);
@@ -234,14 +233,28 @@ const BluetoothBLETerminal = () => {
   useEffect(() => {
     let intervalId;
     if (selectedDevice && isConnected) {
-      intervalId = setInterval(() => {
-        readDataRef.current();
-      }, 500);
+      const fetchData = async () => {
+        await readData();
+        intervalId = setTimeout(fetchData, 200);
+      };
+      fetchData();
     }
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (intervalId) clearTimeout(intervalId);
     };
   }, [isConnected, selectedDevice]);
+
+  // useEffect(() => {
+  //   let intervalId;
+  //   if (selectedDevice && isConnected) {
+  //     intervalId = setInterval(() => {
+  //       readDataRef.current();
+  //     }, 500);
+  //   }
+  //   return () => {
+  //     if (intervalId) clearInterval(intervalId);
+  //   };
+  // }, [isConnected, selectedDevice]);
 
   const disconnectFromDevice = async (device) => {
     try {
